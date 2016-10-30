@@ -17,12 +17,12 @@ After installing the dependencies and this library, make sure you have all 3 pre
 
 
 ## MQTT Client Example
-- Install [PubSubClient](https://github.com/knolleary/pubsubclient) - Manually, or from the Arduino *Library Manager*.
-- Get a MQTT Broker running on your host, listening at least on `localhost`. I used [HiveMQ](www.hivemq.com).
-- Run the **Protocol Gateway** on the same host, on the right COM port.
-- Open and load the example from the Arduino *Examples menu*.
-- When the Arduino is connected to the MQTT broker, it will publish a message and subscribe to the `led` topic.
-- You can use another MQTT client like [MQTT.fx](http://mqttfx.jfx4ee.org) to publish characters `0` and `1` to the topic `led` to toggle the led on and off on the Arduino board.
+1. Install [PubSubClient](https://github.com/knolleary/pubsubclient) - Manually, or from the Arduino *Library Manager*.
+2. Get a MQTT Broker running on your host, listening at least on `localhost`. I used [HiveMQ](www.hivemq.com).
+3. Open and upload the example from the Arduino *Examples menu*.
+4. Run the **Protocol Gateway** on the same host, with the right COM port configuration.
+5. When the Arduino is connected to the MQTT broker, it will publish a message and subscribe to the `led` topic.
+6. You can use another MQTT client like [MQTT.fx](http://mqttfx.jfx4ee.org) to publish characters `0` and `1` to the topic `led` to toggle the led on and off on the Arduino board.
 
 ### Details
 - The protocol provides the app an in order, duplicates free and error checked byte stream by adding a CRC32 and simple retry mechanism. See [this](https://en.wikibooks.org/wiki/Serial_Programming/Error_Correction_Methods) for background.

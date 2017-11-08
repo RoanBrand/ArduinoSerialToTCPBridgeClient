@@ -1,7 +1,8 @@
 # Arduino Serial to TCP Bridge Client
 Arduino client for the [Serial To TCP Bridge Protocol](https://github.com/RoanBrand/SerialToTCPBridgeProtocol) gateway service.
 
-Open a TCP connection to a server from the Arduino using just serial. (No shields or network HW)  
+Open a TCP connection to a server from the Arduino using just serial. No Ethernet/WiFi shields necessary.  
+Quickly communicate with other servers and make network apps using minimal hardware.  
 See [this](https://github.com/RoanBrand/SerialToTCPBridgeProtocol) for more information on the protocol and for the **Protocol Gateway** you will need to run on the host the Arduino is connected to serially.  
 
 ## Dependencies

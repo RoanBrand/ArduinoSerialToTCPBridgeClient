@@ -100,6 +100,13 @@ ArduinoSerialToTCPBridgeClient::ArduinoSerialToTCPBridgeClient() {
 	ser0 = this;
 }
 
+/*
+		SUCCESS 1
+		TIMED_OUT -1
+		INVALID_SERVER -2
+		TRUNCATED -3
+		INVALID_RESPONSE -4
+	*/
 int ArduinoSerialToTCPBridgeClient::connect(IPAddress ip, uint16_t port) {
 	uint8_t destination[6] = {
 		(uint8_t) ((uint32_t) ip),
@@ -109,6 +116,7 @@ int ArduinoSerialToTCPBridgeClient::connect(IPAddress ip, uint16_t port) {
 		(uint8_t) port,
 		(uint8_t) (port >> 8)
 	};
+
 	writePacket(PROTOCOL_CONNECT, destination, 6);
 	lastInAct = millis();
 	while (state != STATE_CONNECTED) {
@@ -119,17 +127,30 @@ int ArduinoSerialToTCPBridgeClient::connect(IPAddress ip, uint16_t port) {
 	}
 	lastInAct = millis();
 	return 1;
-	/*
-		SUCCESS 1
-		TIMED_OUT -1
-		INVALID_SERVER -2
-		TRUNCATED -3
-		INVALID_RESPONSE -4
-	*/
 }
 
 int ArduinoSerialToTCPBridgeClient::connect(const char *host, uint16_t port) {
+	uint8_t destination[64];
+	uint8_t len = 0;
 
+	while (host[len] != '\0') {
+		destination[len] = host[len];
+		len++;
+	}
+
+	destination[len++] = (uint8_t) port;
+	destination[len++] = (uint8_t) (port >> 8);
+
+	writePacket(PROTOCOL_CONNECT | 0x80, destination, len);
+	lastInAct = millis();
+	while (state != STATE_CONNECTED) {
+		uint32_t now = millis();
+		if (now - lastInAct >= 5000) {
+			return -1;
+		}
+	}
+	lastInAct = millis();
+	return 1;
 }
 
 size_t ArduinoSerialToTCPBridgeClient::write(uint8_t) {

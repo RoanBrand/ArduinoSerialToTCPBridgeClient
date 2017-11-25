@@ -5,6 +5,10 @@ Open a TCP connection to a server from the Arduino using just serial. No Etherne
 Quickly communicate with other servers and make network apps using minimal hardware.  
 See [this](https://github.com/RoanBrand/SerialToTCPBridgeProtocol) for more information on the protocol and for the **Protocol Gateway** you will need to run on the host the Arduino is connected to serially.  
 
+## Requires:
+- Serial 0 (Main serial through USB)
+- Timer 1
+
 ## Dependencies
 - [NeoHWSerial](https://github.com/SlashDevin/NeoHWSerial) - Install manually
 - [CRC32](https://github.com/bakercp/CRC32) - Can be installed from the Arduino *Library Manager*
@@ -26,8 +30,9 @@ After installing the dependencies and this library, make sure you have all 3 pre
 6. You can use another MQTT client like [MQTT.fx](http://mqttfx.jfx4ee.org) to publish characters `0` and `1` to the topic `led` to toggle the led on and off on the Arduino board.
 
 ### Details
+- Limit of 250 bytes you can write a time for now. Will return 0 if length is exceeded.
 - The protocol provides the app an in order, duplicates free and error checked byte stream by adding a CRC32 and simple retry mechanism. See [this](https://en.wikibooks.org/wiki/Serial_Programming/Error_Correction_Methods) for background.
 - The **Protocol Gateway** opens a real TCP connection to a set destination on behalf of the **Protocol Client** running on the Arduino, and forwards traffic bi-directionally.
 - `ArduinoSerialToTCPBridgeClient` is derived from the standard Arduino `Client` class. This means existing code written for Ethernet/Wi-Fi shields should work with this.
-- `NeoHWSerial` is an alternative for `Serial`, used to gain access to the AVR UART Interrupts.
+- `NeoHWSerial` is an alternative for `Serial`, used to gain access to the AVR UART interrupts.
 - You cannot use the same serial port in your app that is being used by the protocol, e.g. You cannot use `Serial` (Serial0) when the library uses `NeoSerial`, etc.

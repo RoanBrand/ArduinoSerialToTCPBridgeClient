@@ -135,7 +135,7 @@ size_t ArduinoSerialToTCPBridgeClient::write(const uint8_t *buf, size_t size) {
 	if (!writePacket(lastTx_cmd, lastTx_buf, lastTx_size)) {
 		return 0;
 	}
-	
+
 	ackOutstanding = true;
 	startAckTimer();
 
@@ -219,7 +219,7 @@ boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* pa
 }
 
 void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
-	static uint8_t packetCount = 0;
+	static uint16_t packetCount = 0;
 	static uint8_t rxState = RX_PACKET_IDLE;
 
 	rxBuffer[packetCount++] = c;
@@ -237,8 +237,9 @@ void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
 	case RX_PACKET_GOTCOMMAND:
 		uint8_t packetLength = rxBuffer[0];
 
-		if (packetCount == packetLength + 1) {
+		if (packetCount == (uint16_t)packetLength + 1) {
 			packetCount = 0;
+			rxState = RX_PACKET_IDLE;
 
 			// Integrity checking.
 			uint32_t crcRx = (uint32_t) rxBuffer[packetLength - 3] | ((uint32_t) rxBuffer[packetLength - 2] << 8)
@@ -282,7 +283,6 @@ void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
 					break;
 				}
 			}
-			rxState = RX_PACKET_IDLE;
 		}
 		break;
 	}

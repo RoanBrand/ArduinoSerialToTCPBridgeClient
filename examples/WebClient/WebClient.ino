@@ -26,7 +26,15 @@ ArduinoSerialToTCPBridgeClient* client;
 
 void setup() {
   client = new ArduinoSerialToTCPBridgeClient();
+
+  // Open serial communications and wait for port to open:
+  /*Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }*/
+
   //delay(1000);
+  //Serial.println("connecting...");
   
   if (client->connect(server, 80)) {
     //Serial.println("connected");

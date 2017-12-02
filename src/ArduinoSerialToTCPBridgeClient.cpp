@@ -19,6 +19,7 @@ void ackTimeout() {
 		ser0->stop();
 		return;
 	}
+	ser0->startAckTimer();
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -43,13 +44,13 @@ ArduinoSerialToTCPBridgeClient::ArduinoSerialToTCPBridgeClient() {
 /*
 	http://forum.arduino.cc/index.php?topic=315271.msg2183707#msg2183707
 
-	SUCCESS				1
-	FAILED				0
-	TIMED_OUT			-1
-	INVALID_SERVER		-2
-	TRUNCATED			-3
-	INVALID_RESPONSE	-4
-	DOMAIN_NOT_FOUND	-5
+	SUCCESS              1
+	FAILED               0
+	TIMED_OUT           -1
+	INVALID_SERVER      -2
+	TRUNCATED           -3
+	INVALID_RESPONSE    -4
+	DOMAIN_NOT_FOUND     5
 */
 int ArduinoSerialToTCPBridgeClient::connect(IPAddress ip, uint16_t port) {
 	uint8_t destination[6] = {

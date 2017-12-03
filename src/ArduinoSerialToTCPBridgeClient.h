@@ -46,7 +46,7 @@ private:
 	uint32_t lastInAct;
 	uint8_t lastTx_cmd;
 	uint8_t *lastTx_buf;
-	size_t lastTx_size;
+	uint8_t lastTx_size;
 
 	uint8_t workBuffer[256];
 	uint8_t rxBuffer[256];

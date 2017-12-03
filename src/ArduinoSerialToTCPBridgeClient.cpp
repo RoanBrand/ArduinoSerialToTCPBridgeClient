@@ -50,7 +50,7 @@ ArduinoSerialToTCPBridgeClient::ArduinoSerialToTCPBridgeClient() {
 	INVALID_SERVER      -2
 	TRUNCATED           -3
 	INVALID_RESPONSE    -4
-	DOMAIN_NOT_FOUND     5
+	DOMAIN_NOT_FOUND    -5
 */
 int ArduinoSerialToTCPBridgeClient::connect(IPAddress ip, uint16_t port) {
 	uint8_t destination[6] = {
@@ -115,30 +115,32 @@ size_t ArduinoSerialToTCPBridgeClient::write(uint8_t b) {
 	return write(&b, 1);
 }
 
-// TODO: Buffer bytes to send. May be too much for the Uno.
 size_t ArduinoSerialToTCPBridgeClient::write(const uint8_t *buf, size_t size) {
-	if (size > 250)
-		return 0;
+	size_t written = 0;
 
-	while(ackOutstanding && (state == STATE_CONNECTED));
-	if (state != STATE_CONNECTED)
-		return 0;
+	while (written < size) {
+		size_t left = size - written;
+		uint8_t toWrite = (left > 250) ? 250 : left;
 
-	uint8_t cmd = PROTOCOL_PUBLISH;
-	if (pubSequence) {
-		cmd |= 0x80;
+		while(ackOutstanding && (state == STATE_CONNECTED));
+		if (state != STATE_CONNECTED)
+			return 0;
+
+		uint8_t cmd = PROTOCOL_PUBLISH;
+		if (pubSequence)
+			cmd |= 0x80;
+
+		if (!writePacket(cmd, buf + written, toWrite))
+			return 0;
+
+		lastTx_cmd = cmd;
+		lastTx_buf = (uint8_t*) (buf + written);
+		lastTx_size = toWrite;
+
+		ackOutstanding = true;
+		startAckTimer();
+		written += toWrite;
 	}
-
-	lastTx_cmd = cmd;
-	lastTx_buf = (uint8_t*) buf;
-	lastTx_size = size;
-
-	if (!writePacket(lastTx_cmd, lastTx_buf, lastTx_size)) {
-		return 0;
-	}
-
-	ackOutstanding = true;
-	startAckTimer();
 
 	return size;
 }
@@ -194,6 +196,9 @@ ArduinoSerialToTCPBridgeClient::operator bool() {
 }
 
 boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* payload, uint8_t pLength) {
+	if (pLength > 250)
+		return false;
+
 	workBuffer[0] = pLength + 5;
 	workBuffer[1] = command;
 	if (payload != NULL) {
@@ -208,12 +213,21 @@ boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* pa
 	workBuffer[pLength + 4] = (crcCode & 0x00FF0000) >> 16;
 	workBuffer[pLength + 5] = (crcCode & 0xFF000000) >> 24;
 
-	if ((int) (pLength) + 6 > NeoSerial.availableForWrite()) {
-		return false;
-	}
+	int packetSize = (int)pLength + 6;
+	int written = 0;
 
-	for (int i = 0; i < pLength + 6; i++) {
-		NeoSerial.write(workBuffer[i]);
+	while (written < packetSize) {
+		int space = NeoSerial.availableForWrite();
+
+		if (space > 0) {
+			int left = packetSize - written;
+			int toWrite = (left > space) ? space : left;
+
+			for (int i = written; i < (written + toWrite); i++)
+				NeoSerial.write(workBuffer[i]);
+
+			written += toWrite;
+		}
 	}
 
 	return true;

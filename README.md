@@ -11,7 +11,7 @@ See [this](https://github.com/RoanBrand/SerialToTCPBridgeProtocol) for more info
 
 ## Dependencies
 - [NeoHWSerial](https://github.com/SlashDevin/NeoHWSerial) - Install manually
-- [CRC32](https://github.com/bakercp/CRC32) - Can be installed from the Arduino *Library Manager*
+- [CRC32](https://github.com/bakercp/CRC32) v2.0.0 - Can be installed from the Arduino *Library Manager*
 
 After installing the dependencies and this library, make sure you have all 3 present inside your **libraries** sub-directory of your sketchbook directory.  
 
@@ -36,6 +36,7 @@ After installing the dependencies and this library, make sure you have all 3 pre
 6. You can use another MQTT client like [MQTT.fx](http://mqttfx.jfx4ee.org) to publish characters `0` and `1` to the topic `led` to toggle the led on and off on the Arduino board.
 
 ### Details
+- Tested only on Arduino Uno. It would probably not work for the Arduino Due.
 - The protocol provides the app an in order, duplicates free and error checked byte stream by adding a CRC32 and simple retry mechanism. See [this](https://en.wikibooks.org/wiki/Serial_Programming/Error_Correction_Methods) for background.
 - The **Protocol Gateway** opens a real TCP connection to a set destination on behalf of the **Protocol Client** running on the Arduino, and forwards traffic bi-directionally.
 - `ArduinoSerialToTCPBridgeClient` is derived from the standard Arduino `Client` class. This means existing code written for Ethernet/Wi-Fi shields should work with this.

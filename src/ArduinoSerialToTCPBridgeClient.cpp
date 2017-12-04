@@ -207,7 +207,7 @@ boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* pa
 		}
 	}
 
-	uint32_t crcCode = CRC32::checksum(workBuffer, pLength + 2);
+	uint32_t crcCode = CRC32::calculate(workBuffer, pLength + 2);
 	workBuffer[pLength + 2] = crcCode & 0x000000FF;
 	workBuffer[pLength + 3] = (crcCode & 0x0000FF00) >> 8;
 	workBuffer[pLength + 4] = (crcCode & 0x00FF0000) >> 16;
@@ -259,7 +259,7 @@ void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
 			// Integrity checking.
 			uint32_t crcRx = (uint32_t) rxBuffer[packetLength - 3] | ((uint32_t) rxBuffer[packetLength - 2] << 8)
 				| ((uint32_t) rxBuffer[packetLength - 1] << 16) | ((uint32_t) rxBuffer[packetLength] << 24);
-			uint32_t crcCode = CRC32::checksum(rxBuffer, packetLength - 3);
+			uint32_t crcCode = CRC32::calculate(rxBuffer, packetLength - 3);
 
 			// Received packet valid.
 			if (crcRx == crcCode) {

@@ -48,7 +48,6 @@ private:
 	uint8_t *lastTx_buf;
 	uint8_t lastTx_size;
 
-	uint8_t workBuffer[256];
 	uint8_t rxBuffer[256];
 	uint8_t readBufpH, readBufpT;
 	boolean readBufisFull;

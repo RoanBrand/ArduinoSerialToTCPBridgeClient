@@ -142,6 +142,10 @@ size_t ArduinoSerialToTCPBridgeClient::write(const uint8_t *buf, size_t size) {
 		written += toWrite;
 	}
 
+	while(ackOutstanding && (state == STATE_CONNECTED));
+	if (state != STATE_CONNECTED)
+		return 0;
+
 	return size;
 }
 
@@ -184,6 +188,7 @@ void ArduinoSerialToTCPBridgeClient::stop() {
 	stopAckTimer();
 	writePacket(PROTOCOL_DISCONNECT, NULL, 0);
 	flush();
+	state = STATE_DISCONNECTED;
 	//NeoSerial.end();
 }
 
@@ -199,36 +204,41 @@ boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* pa
 	if (pLength > 250)
 		return false;
 
-	workBuffer[0] = pLength + 5;
-	workBuffer[1] = command;
+	CRC32 crc;
+	uint8_t h_length = pLength + 5;
+
+	while(NeoSerial.availableForWrite() < 2);
+	NeoSerial.write(h_length);
+	crc.update(h_length);
+	NeoSerial.write(command);
+	crc.update(command);
+
 	if (payload != NULL) {
-		for (uint8_t i = 2; i < pLength + 2; i++) {
-			workBuffer[i] = payload[i - 2];
+		uint8_t written = 0;
+
+		while(written < pLength) {
+			int space = NeoSerial.availableForWrite();
+
+			if (space > 0) {
+				uint8_t left = pLength - written;
+				uint8_t toWrite = (left > space) ? space : left;
+
+				for (uint8_t i = written; i < (written + toWrite); i++) {
+					NeoSerial.write(payload[i]);
+					crc.update(payload[i]);
+				}
+				written += toWrite;
+			}
 		}
 	}
 
-	uint32_t crcCode = CRC32::calculate(workBuffer, pLength + 2);
-	workBuffer[pLength + 2] = crcCode & 0x000000FF;
-	workBuffer[pLength + 3] = (crcCode & 0x0000FF00) >> 8;
-	workBuffer[pLength + 4] = (crcCode & 0x00FF0000) >> 16;
-	workBuffer[pLength + 5] = (crcCode & 0xFF000000) >> 24;
+	uint32_t checksum = crc.finalize();
 
-	int packetSize = (int)pLength + 6;
-	int written = 0;
-
-	while (written < packetSize) {
-		int space = NeoSerial.availableForWrite();
-
-		if (space > 0) {
-			int left = packetSize - written;
-			int toWrite = (left > space) ? space : left;
-
-			for (int i = written; i < (written + toWrite); i++)
-				NeoSerial.write(workBuffer[i]);
-
-			written += toWrite;
-		}
-	}
+	while(NeoSerial.availableForWrite() < 4);
+	NeoSerial.write(checksum);
+	NeoSerial.write(checksum >> 8);
+	NeoSerial.write(checksum >> 16);
+	NeoSerial.write(checksum >> 24);
 
 	return true;
 }

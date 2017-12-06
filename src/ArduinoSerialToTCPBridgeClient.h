@@ -19,6 +19,7 @@
 #define RX_PACKET_IDLE 0
 #define RX_PACKET_GOTLENGTH 1
 #define RX_PACKET_GOTCOMMAND 2
+#define RX_PACKET_GOTPAYLOAD 3
 
 class ArduinoSerialToTCPBridgeClient : public Client {
 public:
@@ -48,10 +49,10 @@ private:
 	uint8_t *lastTx_buf;
 	uint8_t lastTx_size;
 
-	uint8_t rxBuffer[256];
-	uint8_t readBufpH, readBufpT;
-	boolean readBufisFull;
-	uint8_t readBuf[256];
+	// RX buffer
+	uint8_t rxBuf[256];
+	uint8_t rxBufpH, rxBufpT;
+	boolean rxBufisFull;
 
 	boolean writePacket(uint8_t command, uint8_t* payload, uint8_t pLength);
 	void rxCallback(uint8_t c);

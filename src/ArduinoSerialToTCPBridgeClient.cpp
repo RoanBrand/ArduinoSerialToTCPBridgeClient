@@ -31,9 +31,9 @@ ArduinoSerialToTCPBridgeClient::ArduinoSerialToTCPBridgeClient() {
 	expectedRxSeqFlag = false;
 	pubSequence = false;
 	tx_retries = 0;
-	readBufpH = 0;
-	readBufpT = 0;
-	readBufisFull = false;
+	rxBufpH = 0;
+	rxBufpT = 0;
+	rxBufisFull = false;
 	state = STATE_DISCONNECTED;
 	ser0 = this;
 	NeoSerial.attachInterrupt(rxISR0);
@@ -150,13 +150,13 @@ size_t ArduinoSerialToTCPBridgeClient::write(const uint8_t *buf, size_t size) {
 }
 
 int ArduinoSerialToTCPBridgeClient::available() {
-	if (readBufisFull) {
+	if (rxBufisFull) {
 		return 256;
 	}
-	if (readBufpT >= readBufpH) {
-		return (int) (readBufpT - readBufpH);
+	if (rxBufpT >= rxBufpH) {
+		return (int) (rxBufpT - rxBufpH);
 	} else {
-		return 256 - (int) (readBufpH - readBufpT);
+		return 256 - (int) (rxBufpH - rxBufpT);
 	}
 }
 
@@ -165,8 +165,8 @@ int ArduinoSerialToTCPBridgeClient::read() {
 		return -1;
 	}
 
-	uint8_t ch = readBuf[readBufpH++];
-	readBufisFull = false;
+	uint8_t ch = rxBuf[rxBufpH++];
+	rxBufisFull = false;
 	return ch;
 }
 
@@ -177,7 +177,7 @@ int ArduinoSerialToTCPBridgeClient::read(uint8_t *buf, size_t size) {
 }
 
 int ArduinoSerialToTCPBridgeClient::peek() {
-	return readBuf[readBufpH];
+	return rxBuf[rxBufpH];
 }
 
 void ArduinoSerialToTCPBridgeClient::flush() {
@@ -244,66 +244,81 @@ boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* pa
 }
 
 void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
-	static uint16_t packetCount = 0;
+	static uint16_t byteCount = 0;
 	static uint8_t rxState = RX_PACKET_IDLE;
 
-	rxBuffer[packetCount++] = c;
+	static uint8_t newBufPtr;
+	static uint8_t p_length;
+	static uint8_t p_cmd;
+	static uint32_t p_crc;
+	static CRC32 crc;
+
+	byteCount++;
 
 	switch (rxState) {
 
 	case RX_PACKET_IDLE:
+		p_length = c;
+		crc.reset();
+		crc.update(c);
 		rxState = RX_PACKET_GOTLENGTH;
 		break;
 
 	case RX_PACKET_GOTLENGTH:
-		rxState = RX_PACKET_GOTCOMMAND;
+		p_cmd = c;
+		p_crc = 0;
+		crc.update(c);
+		if (p_length > 5) {
+			newBufPtr = rxBufpT;
+			rxState = RX_PACKET_GOTCOMMAND;
+		} else {
+			rxState = RX_PACKET_GOTPAYLOAD;
+		}
 		break;
 
 	case RX_PACKET_GOTCOMMAND:
-		uint8_t packetLength = rxBuffer[0];
+		if (!rxBufisFull)
+			rxBuf[newBufPtr++] = c;
+		rxBufisFull = (rxBufpH == newBufPtr);
+		crc.update(c);
+		if (byteCount == (p_length - 3))
+			rxState = RX_PACKET_GOTPAYLOAD;
+		break;
 
-		if (packetCount == (uint16_t)packetLength + 1) {
-			packetCount = 0;
+	case RX_PACKET_GOTPAYLOAD:
+		// Integrity checking.
+		p_crc |= (uint32_t)c << (8 * (byteCount - p_length + 2));
+
+		if (byteCount == (uint16_t)p_length + 1) {
+			uint32_t crcCode = crc.finalize();
+			byteCount = 0;
 			rxState = RX_PACKET_IDLE;
 
-			// Integrity checking.
-			uint32_t crcRx = (uint32_t) rxBuffer[packetLength - 3] | ((uint32_t) rxBuffer[packetLength - 2] << 8)
-				| ((uint32_t) rxBuffer[packetLength - 1] << 16) | ((uint32_t) rxBuffer[packetLength] << 24);
-			uint32_t crcCode = CRC32::calculate(rxBuffer, packetLength - 3);
-
 			// Received packet valid.
-			if (crcRx == crcCode) {
-				boolean rxSeqFlag = (rxBuffer[1] & 0x80) > 0;
+			if (p_crc == crcCode) {
+				boolean rxSeqFlag = (p_cmd & 0x80) > 0;
 
-				switch (rxBuffer[1] & 0x7F) {
+				switch (p_cmd & 0x7F) {
 				// Connection established with destination.
 				case PROTOCOL_CONNACK:
-					if (rxBuffer[0] == 5) {
+					if (p_length == 5)
 						state = STATE_CONNECTED;
-					}
 					break;
 				// Incoming data.
 				case PROTOCOL_PUBLISH:
-					writePacket(PROTOCOL_ACK | (rxBuffer[1] & 0x80), NULL, 0);
+					writePacket(PROTOCOL_ACK | (p_cmd & 0x80), NULL, 0);
 					if (rxSeqFlag == expectedRxSeqFlag) {
 						expectedRxSeqFlag = !expectedRxSeqFlag;
-						if (rxBuffer[0] > 5) {
-							for (uint8_t i = 0; i < rxBuffer[0] - 5; i++) {
-								readBuf[readBufpT++] = rxBuffer[2 + i];
-							}
-							readBufisFull = (readBufpH == readBufpT);
-						}
+						rxBufpT = newBufPtr;
 					}
 					break;
-				// Protocol Acknowledge
+				// Protocol Acknowledge.
 				case PROTOCOL_ACK:
-					if (ackOutstanding) {
-						if (rxSeqFlag == pubSequence) {
-							stopAckTimer();
-							pubSequence = !pubSequence;
-							tx_retries = 0;
-							ackOutstanding = false;
-						}
+					if (ackOutstanding && (rxSeqFlag == pubSequence)) {
+						stopAckTimer();
+						pubSequence = !pubSequence;
+						tx_retries = 0;
+						ackOutstanding = false;
 					}
 					break;
 				}

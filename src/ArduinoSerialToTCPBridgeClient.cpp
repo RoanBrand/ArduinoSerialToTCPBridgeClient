@@ -150,9 +150,9 @@ size_t ArduinoSerialToTCPBridgeClient::write(const uint8_t *buf, size_t size) {
 }
 
 int ArduinoSerialToTCPBridgeClient::available() {
-	if (rxBufisFull) {
+	if (rxBufisFull)
 		return 256;
-	}
+
 	if (rxBufpT >= rxBufpH) {
 		return (int) (rxBufpT - rxBufpH);
 	} else {
@@ -161,9 +161,8 @@ int ArduinoSerialToTCPBridgeClient::available() {
 }
 
 int ArduinoSerialToTCPBridgeClient::read() {
-	if (!available()) {
+	if (available() == 0)
 		return -1;
-	}
 
 	uint8_t ch = rxBuf[rxBufpH++];
 	rxBufisFull = false;
@@ -171,9 +170,18 @@ int ArduinoSerialToTCPBridgeClient::read() {
 }
 
 int ArduinoSerialToTCPBridgeClient::read(uint8_t *buf, size_t size) {
-	if (!available()) {
+	int have = available();
+	if (have == 0)
 		return -1;
-	}
+
+	int toRead = (size > have) ? have : size;
+
+	for (size_t i = 0; i < toRead; i++)
+		buf[i] = rxBuf[rxBufpH++];
+
+	rxBufisFull = false;
+	// should we return rather when number of bytes requested is read?
+	return toRead;
 }
 
 int ArduinoSerialToTCPBridgeClient::peek() {

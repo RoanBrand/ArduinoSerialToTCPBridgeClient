@@ -62,6 +62,7 @@ private:
 
 	friend void rxISR0(uint8_t c);
 	friend void ackTimeout();
-};
+
+int lol;
 
 #endif

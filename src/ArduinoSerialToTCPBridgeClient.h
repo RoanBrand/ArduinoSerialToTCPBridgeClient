@@ -54,6 +54,7 @@ private:
 	uint8_t rxBufpH, rxBufpT;
 	boolean rxBufisFull;
 
+	void reset();
 	boolean writePacket(uint8_t command, uint8_t* payload, uint8_t pLength);
 	void rxCallback(uint8_t c);
 	void setupAckTimer();

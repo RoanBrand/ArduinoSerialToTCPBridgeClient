@@ -27,14 +27,7 @@ ISR(TIMER1_COMPA_vect) {
 }
 
 ArduinoSerialToTCPBridgeClient::ArduinoSerialToTCPBridgeClient() {
-	ackOutstanding = false;
-	expectedRxSeqFlag = false;
-	pubSequence = false;
-	tx_retries = 0;
-	rxBufpH = 0;
-	rxBufpT = 0;
-	rxBufisFull = false;
-	state = STATE_DISCONNECTED;
+	reset();
 	ser0 = this;
 	NeoSerial.attachInterrupt(rxISR0);
 	NeoSerial.begin(115200);
@@ -193,10 +186,9 @@ void ArduinoSerialToTCPBridgeClient::flush() {
 }
 
 void ArduinoSerialToTCPBridgeClient::stop() {
-	stopAckTimer();
 	writePacket(PROTOCOL_DISCONNECT, NULL, 0);
 	flush();
-	state = STATE_DISCONNECTED;
+	reset();
 	//NeoSerial.end();
 }
 
@@ -206,6 +198,18 @@ uint8_t ArduinoSerialToTCPBridgeClient::connected() {
 
 ArduinoSerialToTCPBridgeClient::operator bool() {
 	return 1;
+}
+
+void ArduinoSerialToTCPBridgeClient::reset() {
+	stopAckTimer();
+	state = STATE_DISCONNECTED;
+	ackOutstanding = false;
+	expectedRxSeqFlag = false;
+	pubSequence = false;
+	tx_retries = 0;
+	rxBufpH = 0;
+	rxBufpT = 0;
+	rxBufisFull = false;
 }
 
 boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* payload, uint8_t pLength) {
@@ -311,6 +315,11 @@ void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
 				case PROTOCOL_CONNACK:
 					if (p_length == 5)
 						state = STATE_CONNECTED;
+					break;
+				// Upstream tcp connection closed.
+				case PROTOCOL_DISCONNECT:
+					if (p_length == 5 && (state == STATE_CONNECTED))
+						reset();
 					break;
 				// Incoming data.
 				case PROTOCOL_PUBLISH:

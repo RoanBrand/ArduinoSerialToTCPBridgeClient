@@ -1,11 +1,14 @@
 /*
  * Basic example of MQTT Client running over the Serial To TCP Bridge Client.
  *
- * The example connects to a Broker serving on "localhost" on the host PC.
- * It will publish millis() as a message every 5s, while connected.
+ * It uses the MQTT client package PubSubClient from Nick O’Leary.
+ * Install it from the Library Manager, if not already automatically installed.
  *
- * Using another MQTT client:
- * Publish char '1' to topic "led" to turn on Led on Arduino Uno and '2' to turn off.
+ * The example connects to the public Broker at "mqtt.eclipseprojects.io".
+ * It will publish millis() as a message every 5s to topic "ArduinoOut", while connected.
+ *
+ * Using a MQTT client (e.g. https://mqttx.app):
+ * Publish character '1' to topic "LedIn" to turn on the Led on the Arduino Uno and '2' to turn it off.
  */
 
 #include <ArduinoSerialToTCPBridgeClient.h>
@@ -14,8 +17,8 @@
 ArduinoSerialToTCPBridgeClient*      s;  // Protocol Client running over USB Serial
 PubSubClient                    client;  // MQTT Client
 
-const char* broker   = "localhost";
-const char* ledTopic = "led";
+const char* broker   = "mqtt.eclipseprojects.io";
+const char* ledTopic = "LedIn";
 const char* outTopic = "ArduinoOut";
 
 uint32_t lastPub = 0;
@@ -68,7 +71,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 boolean connectToBroker() {
   if (client.connect("arduinoClient")) {
     // Publish first message on connect and subscribe to Led controller.
-    client.publish(outTopic, "Hello world!");
+    client.publish(outTopic, "Arduino connected!");
     client.subscribe(ledTopic);
     return true;
   } else {

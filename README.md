@@ -5,19 +5,20 @@ Open a TCP connection to a server from the Arduino using just serial. No Etherne
 Quickly communicate with other servers and make network apps using minimal hardware.  
 See [this](https://github.com/RoanBrand/SerialToTCPBridgeProtocol) for more information on the protocol and for the **Protocol Gateway** you will need to run on the host PC the Arduino is connected to serially.  
 
-## Requires:
+## Hardware Requirements:
 - Serial 0 (Main serial through USB)
 - Timer 1
 
 ## Dependencies
-- [NeoHWSerial](https://github.com/SlashDevin/NeoHWSerial) - Install manually
-- [CRC32](https://github.com/bakercp/CRC32) v2.0.0 - Can be installed from the Arduino *Library Manager*
+- [NeoHWSerial](https://github.com/gicking/NeoHWSerial) v1.6.6
+- [CRC32](https://github.com/bakercp/CRC32) v2.0.0
+- [PubSubClient](https://github.com/knolleary/pubsubclient) v2.8.0 - Needed for the included **MQTT Client Example**
 
-After installing the dependencies and this library, make sure you have all 3 present inside your **libraries** sub-directory of your sketchbook directory.  
+These should install automatically when installing this library through the Arduino *Library Manager*.
 
 ## How to
 - Get the [Protocol Gateway](https://github.com/RoanBrand/SerialToTCPBridgeProtocol) and build it.
-- Change the gateway's config to listen on the COM port connected to your Arduino and start it.
+- Change the gateway's config to listen on the Serial port connected to your Arduino and start it.
 - Your Arduino app can then use the `ArduinoSerialToTCPBridgeClient` API which is similar to the `EthernetClient` API to make tcp connections to servers as long as they are reachable from the host PC and the gateway service is running.
 
 ## Web Client Example
@@ -28,12 +29,12 @@ After installing the dependencies and this library, make sure you have all 3 pre
 - On other boards with more hardware serial ports than the Uno the example can be modified to use those instead (Serial1,2,etc.) and remove the software serial lib.
 
 ## MQTT Client Example
-1. Install [PubSubClient](https://github.com/knolleary/pubsubclient) - Manually, or from the Arduino *Library Manager*.
-2. Get a MQTT Broker running on your host PC, listening on `localhost`. I used [HiveMQ](www.hivemq.com).
-3. Open and upload the example from the Arduino *Examples menu*.
-4. Run the **Protocol Gateway** on the same PC, with the right COM port configuration.
-5. When the Arduino is connected to the MQTT broker, it will publish a message and subscribe to the `led` topic.
-6. You can use another MQTT client like [MQTT.fx](http://mqttfx.jfx4ee.org) to publish characters `0` and `1` to the topic `led` to toggle the led on and off on the Arduino board.
+1. Open and upload the example from the Arduino *Examples menu*.
+2. Run the **Protocol Gateway** on the same PC, with the correct Serial port configuration.
+3. After a short time, the Arduino should connect to the MQTT broker `mqtt.eclipseprojects.io`.
+4. Using a MQTT client, like [MQTTX](https://mqttx.app/), connect to the same broker and subscribe to the `ArduinoOut` topic.
+5. While the Arduino is connected to the MQTT broker, it will publish a message to the `ArduinoOut` topic every 5s.
+6. Using the client, publish characters `1` and `2` to topic `LedIn` to toggle the led on and off on the Arduino board.
 
 ### Details
 - Tested only on Arduino Uno. It would probably not work for the Arduino Due.

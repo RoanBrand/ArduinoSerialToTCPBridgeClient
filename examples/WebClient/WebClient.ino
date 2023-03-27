@@ -12,7 +12,7 @@
 
  */
 
-#include <ArduinoSerialToTCPBridgeClient.h>
+#include <TCP_over_Serial.h>
 
 // if you don't want to use DNS (and reduce your sketch size)
 // use the numeric IP instead of the name for the server:
@@ -22,10 +22,10 @@ char server[] = "www.google.com";    // name address for Google (using DNS)
 // Initialize the Protocol client library
 // with the IP address and port of the server
 // that you want to connect to (port 80 is default for HTTP):
-ArduinoSerialToTCPBridgeClient* client;
+TCPOverSerialClient* client;
 
 void setup() {
-  client = new ArduinoSerialToTCPBridgeClient();
+  client = new TCPOverSerialClient();
 
   // Open serial communications and wait for port to open:
   /*Serial.begin(9600);

@@ -11,11 +11,11 @@
  * Publish character '1' to topic "LedIn" to turn on the Led on the Arduino Uno and '2' to turn it off.
  */
 
-#include <ArduinoSerialToTCPBridgeClient.h>
+#include <TCP_over_Serial.h>
 #include <PubSubClient.h>
 
-ArduinoSerialToTCPBridgeClient*      s;  // Protocol Client running over USB Serial
-PubSubClient                    client;  // MQTT Client
+TCPOverSerialClient* s;       // Protocol Client running over USB Serial
+PubSubClient         client;  // MQTT Client
 
 const char* broker   = "mqtt.eclipseprojects.io";
 const char* ledTopic = "LedIn";
@@ -25,7 +25,7 @@ uint32_t lastPub = 0;
 
 void setup() {
   pinMode(13, OUTPUT);
-  s = new ArduinoSerialToTCPBridgeClient();
+  s = new TCPOverSerialClient();
   client.setClient(*s);
 
   // MQTT Broker running on same PC the Arduino is connected to.

@@ -1,8 +1,8 @@
-#include "ArduinoSerialToTCPBridgeClient.h"
+#include "TCP_over_Serial.h"
 #include <NeoHWSerial.h>
 #include <CRC32.h>
 
-static ArduinoSerialToTCPBridgeClient* ser0;
+static TCPOverSerialClient* ser0;
 
 void rxISR0(uint8_t c) {
 	ser0->rxCallback(c);
@@ -26,7 +26,7 @@ ISR(TIMER1_COMPA_vect) {
 	ackTimeout();
 }
 
-ArduinoSerialToTCPBridgeClient::ArduinoSerialToTCPBridgeClient() {
+TCPOverSerialClient::TCPOverSerialClient() {
 	reset();
 	ser0 = this;
 	NeoSerial.attachInterrupt(rxISR0);
@@ -45,7 +45,7 @@ ArduinoSerialToTCPBridgeClient::ArduinoSerialToTCPBridgeClient() {
 	INVALID_RESPONSE    -4
 	DOMAIN_NOT_FOUND    -5
 */
-int ArduinoSerialToTCPBridgeClient::connect(IPAddress ip, uint16_t port) {
+int TCPOverSerialClient::connect(IPAddress ip, uint16_t port) {
 	uint8_t destination[6] = {
 		(uint8_t) ((uint32_t) ip),
 		(uint8_t) ((uint32_t) ip >> 8),
@@ -72,7 +72,7 @@ int ArduinoSerialToTCPBridgeClient::connect(IPAddress ip, uint16_t port) {
 }
 
 // Maximum host string of 248 bytes.
-int ArduinoSerialToTCPBridgeClient::connect(const char *host, uint16_t port) {
+int TCPOverSerialClient::connect(const char *host, uint16_t port) {
 	uint8_t destination[250];
 	uint8_t len = 0;
 
@@ -104,11 +104,11 @@ int ArduinoSerialToTCPBridgeClient::connect(const char *host, uint16_t port) {
 	return 1;
 }
 
-size_t ArduinoSerialToTCPBridgeClient::write(uint8_t b) {
+size_t TCPOverSerialClient::write(uint8_t b) {
 	return write(&b, 1);
 }
 
-size_t ArduinoSerialToTCPBridgeClient::write(const uint8_t *buf, size_t size) {
+size_t TCPOverSerialClient::write(const uint8_t *buf, size_t size) {
 	size_t written = 0;
 
 	while (written < size) {
@@ -142,7 +142,7 @@ size_t ArduinoSerialToTCPBridgeClient::write(const uint8_t *buf, size_t size) {
 	return size;
 }
 
-int ArduinoSerialToTCPBridgeClient::available() {
+int TCPOverSerialClient::available() {
 	if (rxBufisFull)
 		return 256;
 
@@ -153,7 +153,7 @@ int ArduinoSerialToTCPBridgeClient::available() {
 	}
 }
 
-int ArduinoSerialToTCPBridgeClient::read() {
+int TCPOverSerialClient::read() {
 	if (available() == 0)
 		return -1;
 
@@ -162,7 +162,7 @@ int ArduinoSerialToTCPBridgeClient::read() {
 	return ch;
 }
 
-int ArduinoSerialToTCPBridgeClient::read(uint8_t *buf, size_t size) {
+int TCPOverSerialClient::read(uint8_t *buf, size_t size) {
 	int have = available();
 	if (have == 0)
 		return -1;
@@ -177,30 +177,30 @@ int ArduinoSerialToTCPBridgeClient::read(uint8_t *buf, size_t size) {
 	return toRead;
 }
 
-int ArduinoSerialToTCPBridgeClient::peek() {
+int TCPOverSerialClient::peek() {
 	return rxBuf[rxBufpH];
 }
 
-void ArduinoSerialToTCPBridgeClient::flush() {
+void TCPOverSerialClient::flush() {
 	NeoSerial.flush();
 }
 
-void ArduinoSerialToTCPBridgeClient::stop() {
+void TCPOverSerialClient::stop() {
 	writePacket(PROTOCOL_DISCONNECT, NULL, 0);
 	flush();
 	reset();
 	//NeoSerial.end();
 }
 
-uint8_t ArduinoSerialToTCPBridgeClient::connected() {
+uint8_t TCPOverSerialClient::connected() {
 	return (state == STATE_CONNECTED) ? 1 : 0;
 }
 
-ArduinoSerialToTCPBridgeClient::operator bool() {
+TCPOverSerialClient::operator bool() {
 	return 1;
 }
 
-void ArduinoSerialToTCPBridgeClient::reset() {
+void TCPOverSerialClient::reset() {
 	stopAckTimer();
 	state = STATE_DISCONNECTED;
 	ackOutstanding = false;
@@ -212,7 +212,7 @@ void ArduinoSerialToTCPBridgeClient::reset() {
 	rxBufisFull = false;
 }
 
-boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* payload, uint8_t pLength) {
+boolean TCPOverSerialClient::writePacket(uint8_t command, uint8_t* payload, uint8_t pLength) {
 	if (pLength > 250)
 		return false;
 
@@ -255,7 +255,7 @@ boolean ArduinoSerialToTCPBridgeClient::writePacket(uint8_t command, uint8_t* pa
 	return true;
 }
 
-void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
+void TCPOverSerialClient::rxCallback(uint8_t c) {
 	static uint16_t byteCount = 0;
 	static uint8_t rxState = RX_PACKET_IDLE;
 
@@ -346,7 +346,7 @@ void ArduinoSerialToTCPBridgeClient::rxCallback(uint8_t c) {
 }
 
 // http://www.engblaze.com/microcontroller-tutorial-avr-and-arduino-timer-interrupts/
-void ArduinoSerialToTCPBridgeClient::setupAckTimer() {
+void TCPOverSerialClient::setupAckTimer() {
 	cli();
 	TCCR1A = 0;
 	TCCR1B = 0;
@@ -356,11 +356,11 @@ void ArduinoSerialToTCPBridgeClient::setupAckTimer() {
 	sei();
 }
 
-void ArduinoSerialToTCPBridgeClient::startAckTimer() {
+void TCPOverSerialClient::startAckTimer() {
 	TCCR1B |= (1 << CS12); // 256 prescaler
 }
 
-void ArduinoSerialToTCPBridgeClient::stopAckTimer() {
+void TCPOverSerialClient::stopAckTimer() {
 	TCCR1B &= 0xF8; // remove clk source
 	TCNT1 = 0; // reset counter
 }

@@ -1,5 +1,5 @@
-#ifndef arduinoserialtotcpbridgeclient_H
-#define arduinoserialtotcpbridgeclient_H
+#ifndef tcpoverserial_H
+#define tcpoverserial_H
 
 #include "Arduino.h"
 #include "Client.h"
@@ -21,9 +21,9 @@
 #define RX_PACKET_GOTCOMMAND 2
 #define RX_PACKET_GOTPAYLOAD 3
 
-class ArduinoSerialToTCPBridgeClient : public Client {
+class TCPOverSerialClient : public Client {
 public:
-	ArduinoSerialToTCPBridgeClient();
+	TCPOverSerialClient();
 
 	virtual int connect(IPAddress ip, uint16_t port);
 	virtual int connect(const char *host, uint16_t port);

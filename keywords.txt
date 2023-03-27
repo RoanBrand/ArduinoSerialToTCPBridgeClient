@@ -6,13 +6,13 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-ArduinoSerialToTCPBridgeClient	KEYWORD1
+TCPOverSerialClient	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-ArduinoSerialToTCPBridgeClient	KEYWORD2
+TCPOverSerialClient	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)
